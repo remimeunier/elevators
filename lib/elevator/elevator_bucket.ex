@@ -1,13 +1,16 @@
 defmodule Elevator.ElevatorBucket do
   use Agent
+  require MyConstants
+  alias MyConstants, as: Const
 
   @doc """
   Starts a new bucket.
   """
-  def start_link(initial_floor, floor_stops) do
+  def start_link(initial_floor) do
     Agent.start_link(fn -> %{current_position: initial_floor,
                              destination: [],
-                             floor_stops: floor_stops} end)
+                             iddle_destination: [],
+                             state: Const.state_idle} end)
   end
 
   @doc """
@@ -16,13 +19,6 @@ defmodule Elevator.ElevatorBucket do
   def get(bucket) do
     Agent.get(bucket, fn list -> list end)
   end
-
-  # @doc """
-  # Gets a value from the `bucket` by `key`.
-  # """
-  # def get_destination(bucket) do
-  #   Agent.get(bucket, fn list -> list[:destination] end)
-  # end
 
   @doc """
   add 1 to current_position.
@@ -39,7 +35,7 @@ defmodule Elevator.ElevatorBucket do
   end
 
   @doc """
-  Add a new destination at the end of the destination list
+  Add a new iddle destination at the end of the destination list
   """
   # def add_destination(bucket, value) do
   #   Agent.update(bucket, &Map.update!(&1, :destination, fn list ->
@@ -47,28 +43,89 @@ defmodule Elevator.ElevatorBucket do
   #   end))
   # end
 
+  # @doc """
+  # Add a new destination at the end of the destination list
+  # """
+  # def add_iddle_destination(bucket, value) do
+  #   Agent.update(bucket, &Map.update!(&1, :iddle_destination, fn list ->
+  #     list ++ [value]
+  #   end))
+  # end
+
+  @doc """
+  Set the state to value
+  """
+  def set_state(bucket, value) do
+    Agent.update(bucket, &Map.update!(&1, :state, fn elem ->
+      value
+    end))
+  end
+
   @doc """
   Add a new destination at the end of the destination list
   """
   def add_destination(bucket, value) do
+    # TODO return if already exist or if equal to current position
+    # current_position = Map.get(dict, :current_position)
     Agent.update(bucket, fn dict ->
-      # If the destination exist already, don't do anything
-      if Enum.member?(Map.get(dict, :destination), value) do
-        dict
-      else
-        case Map.get(dict, :destination) do
-          []            -> Map.update!(dict, :destination, fn _list -> [value] end)
-          [head | tail] when dict[:current_position] ->
-            Map.update!(dict, :destination, fn list -> list ++ [value] end)
-        end
-      end
+       Elevator.ChoiceMaker.add_destination_to_elevator(dict, value)
     end)
   end
 
   @doc """
-  remoove the first destination
+  Add a new destination at the end of the destination list
   """
-  def remoove_first_destination(bucket) do
-    Agent.update(bucket, &Map.update!(&1, :destination, fn [head | tail] -> tail end))
+  # def add_destination(bucket, value) do
+  # #   # TODO return if already exist or if equal to current position
+  #   current_position = Map.get(dict, :current_position)
+  #   Agent.update(bucket, fn dict ->
+  #       case Map.get(dict, :direction) do
+  #         nil ->
+  #           Map.update!(dict, :destination, &(&1 ++ [value]))
+  #           |> Map.update!(dict, :direction, fn v -> direction(current_position, value) end)
+  #         _ when DirectionCalculator.my_direction?(value, current_position, direction) ->
+  #           Map.update!(dict, :destination, &(&1 ++ [value]))
+  #         _ -> Map.update!(dict, :iddle_destination, &(&1 ++ [value]))
+
+  #       end
+  #   end)
+    # Agent.update(bucket, fn dict ->
+    #   # If the destination exist already, don't do anything
+    #   if Enum.member?(Map.get(dict, :destination), value) do
+    #     dict
+    #   else
+    #     case Map.get(dict, :destination) do
+    #       []            -> Map.update!(dict, :destination, fn _list -> [value] end)
+    #       [head | tail] when dict[:current_position] ->
+    #         Map.update!(dict, :destination, fn list -> list ++ [value] end)
+    #     end
+    #   end
+    # end)
+  #end
+
+  @doc """
+  remoove the given destination, if destination if empty, it switchs states
+  and add iddle destiantion in destination
+  """
+  # def remoove_destination(bucket, destination) do
+  #   Agent.update(bucket, &Map.update!(&1, :destination, fn list ->
+  #     Enum.filter(list, fn el -> el != destination end)
+  #   end))
+  # end
+
+  def remoove_destination(bucket, destination) do
+    Agent.update(bucket, fn dict ->
+      # remoove destination
+      new_value = Map.update!(dict, :destination, fn list ->
+        Enum.filter(list, fn el -> el != destination end)
+      end)
+      case new_value do
+        %{destination: []} ->
+          Map.update!(new_value, :destination, fn list -> Map.get(dict,:iddle_destination) end)
+          |> Map.update!(:iddle_destination, fn list -> [] end)
+          |> Map.update!(:state, fn elem -> elem * (-1) end)
+        _                   -> new_value
+      end
+    end)
   end
 end

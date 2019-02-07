@@ -14,8 +14,8 @@ defmodule Elevator.ElevatorRegistry do
   create a bucket_elevator with the associated `name`, if it doesn't exist yet
   Returns `{:ok, bucket_pid}`
   """
-  def create(server, name, initial_floor, floors_stop) do
-    GenServer.call(server, {:create, name, initial_floor, floors_stop})
+  def create(server, name, initial_floor) do
+    GenServer.call(server, {:create, name, initial_floor})
   end
 
   @doc """
@@ -40,10 +40,10 @@ defmodule Elevator.ElevatorRegistry do
 
   Returns `{:ok, bucket_pid}` if the bucket exists, `:error` otherwise.
   """
-  # def outside_call(server, floor, up_dow) do
-  #   {:ok, elevator} = GenServer.call(server, {:find_best, floor, up_down})
-  #   GenServer.cast(server, {:go_to, name, floor})
-  # end
+  def exterior_call(server, floor, up_or_down) do
+    # {:ok, elevator} = GenServer.call(server, {:find_best, floor, up_down})
+    GenServer.cast(server, {:exterior_call, floor, up_or_down})
+  end
 
   ## Server callbacks
 
@@ -51,11 +51,11 @@ defmodule Elevator.ElevatorRegistry do
     {:ok, %{}}
   end
 
-  def handle_call({:create, name, initial_floor, floors_stops}, _from, names) do
+  def handle_call({:create, name, initial_floor}, _from, names) do
   if Map.has_key?(names, name) do
       {:reply, Map.fetch(names, name), names}
     else
-      {:ok, elevator_bucket} = Elevator.ElevatorBucket.start_link(initial_floor, floors_stops)
+      {:ok, elevator_bucket} = Elevator.ElevatorBucket.start_link(initial_floor)
       names = Map.put(names, name, elevator_bucket)
       {:reply, Map.fetch(names, name), names}
     end
@@ -65,42 +65,47 @@ defmodule Elevator.ElevatorRegistry do
     {:reply, Map.fetch(names, name), names}
   end
 
-  def handle_cast({:go_to, name, destination_floor}, names) do
-    {:ok, elevator} = Map.fetch(names, name)
-    %{current_position: _current_position,
-      destination: destination} = Elevator.ElevatorBucket.get(elevator)
-    Elevator.ElevatorBucket.add_destination(elevator, destination_floor)
-    if destination == [] do
-      moove(Elevator.ElevatorBucket.get(elevator), elevator, name)
-    end
-    {:noreply, names}
+  def handle_call({:exterior_call, floor, up_or_down}, _from, names) do
+
   end
 
-  defp moove(%{current_position: _current_position, destination: []}, _elevator, _name) do
-  end
-  defp moove(%{current_position: current_position, destination: [head | tail]}, elevator, name) do
+  # def handle_cast({:go_to, name, destination_floor}, names) do
+  #   {:ok, elevator} = Map.fetch(names, name)
+  #   %{current_position: _current_position,
+  #     destination: destination} = Elevator.ElevatorBucket.get(elevator)
+  #   Elevator.ElevatorBucket.add_destination(elevator, destination_floor)
+  #   if destination == [] do
+  #     moove(Elevator.ElevatorBucket.get(elevator), elevator, name)
+  #   end
+  #   {:noreply, names}
+  # end
 
-    cond do
-      current_position < head ->
-        # moove from one up
-        Process.sleep(1000)
-        Elevator.ElevatorBucket.go_up(elevator)
-      current_position > head ->
-        # moove from one down
-        Process.sleep(1000)
-        Elevator.ElevatorBucket.go_down(elevator)
-      end
+  # defp moove(%{current_position: _current_position, destination: []}, _elevator, _name) do
+  # end
+  # defp moove(%{current_position: current_position,
+  #              destination: [head | tail]}, elevator, name) do
 
-    %{current_position: current_position,
-      destination: [head | tail]} = Elevator.ElevatorBucket.get(elevator)
-    if current_position == head do
-      ColorPrinter.print("#{name} ARRIVED at floor #{head}", name)
-      Elevator.ElevatorBucket.remoove_first_destination(elevator)
-      Process.sleep(1000)
-      moove(Elevator.ElevatorBucket.get(elevator), elevator, name)
-    else
-      ColorPrinter.print("#{name} Passed at floor #{current_position}", name)
-      moove(%{current_position: current_position, destination: [head | tail]}, elevator, name)
-    end
-  end
+  #   cond do
+  #     current_position < head ->
+  #       # moove from one up
+  #       Process.sleep(1000)
+  #       Elevator.ElevatorBucket.go_up(elevator)
+  #     current_position > head ->
+  #       # moove from one down
+  #       Process.sleep(1000)
+  #       Elevator.ElevatorBucket.go_down(elevator)
+  #     end
+
+  #   %{current_position: current_position,
+  #     destination: [head | tail]} = Elevator.ElevatorBucket.get(elevator)
+  #   if current_position == head do
+  #     ColorPrinter.print("#{name} ARRIVED at floor #{head}", name)
+  #     Elevator.ElevatorBucket.remoove_first_destination(elevator)
+  #     Process.sleep(1000)
+  #     moove(Elevator.ElevatorBucket.get(elevator), elevator, name)
+  #   else
+  #     ColorPrinter.print("#{name} Passed at floor #{current_position}", name)
+  #     moove(%{current_position: current_position, destination: [head | tail]}, elevator, name)
+  #   end
+  # end
 end

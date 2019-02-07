@@ -5,12 +5,10 @@ defmodule Elevator.UserInterface do
   """
 
   def init do
-    p1 = [-1, -2, 0, 3, 4, 5, 6, 7, 8, 9]
-    p2 = [0, 3, 4, 5, 6, 7, 8, 9]
     {:ok, registry} = Elevator.ElevatorRegistry.start_link(nil)
-    Elevator.ElevatorRegistry.create(registry, "elevator_1", 0, p1)
-    Elevator.ElevatorRegistry.create(registry, "elevator_2", 0, p2)
-    Elevator.ElevatorRegistry.create(registry, "elevator_3", 6, p2)
+    Elevator.ElevatorRegistry.create(registry, "elevator_1", 0)
+    Elevator.ElevatorRegistry.create(registry, "elevator_2", 0)
+    Elevator.ElevatorRegistry.create(registry, "elevator_3", 6)
     registry
   end
 
