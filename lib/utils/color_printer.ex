@@ -1,10 +1,13 @@
 defmodule ColorPrinter do
+  require Elevator.Constants
+  alias Elevator.Constants, as: Const
+
   def print(term, name) do
     case name do
-        "elevator_1" -> print_color(term, :green)
-        "elevator_2" -> print_color(term, :red)
-        "elevator_3" -> print_color(term, :yellow)
-        _ ->            print_color(term, :white)
+      "elevator_1" -> print_color(term, :green)
+      "elevator_2" -> print_color(term, :red)
+      "elevator_3" -> print_color(term, :yellow)
+      _            -> print_color(term, :white)
     end
   end
 
