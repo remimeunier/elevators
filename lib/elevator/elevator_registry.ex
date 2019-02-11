@@ -1,14 +1,12 @@
 defmodule Elevator.ElevatorRegistry do
   use GenServer
-  require Elevator.Constants
-  alias Elevator.Constants, as: Const
 
   ## Client API
 
   @doc """
   Starts the registry.
   """
-  def start_link(opts) do
+  def start_link(_opts) do
     GenServer.start_link(__MODULE__, :ok)
   end
 
@@ -45,7 +43,7 @@ defmodule Elevator.ElevatorRegistry do
   end
 
   def handle_call({:load, elevator, name}, _from, names) do
-  if Map.has_key?(names, name) do
+    if Map.has_key?(names, name) do
       {:reply, Map.fetch(names, name), names}
     else
       names = Map.put(names, name, elevator)

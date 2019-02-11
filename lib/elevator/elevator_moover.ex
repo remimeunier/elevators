@@ -8,7 +8,7 @@ defmodule Elevator.ElevatorMoover do
   @doc """
   Starts the registry.
   """
-  def start_link(opts) do
+  def start_link(_opts) do
     GenServer.start_link(__MODULE__, :ok)
   end
 
@@ -34,9 +34,9 @@ defmodule Elevator.ElevatorMoover do
     {:ok, %{}}
   end
 
-  def handle_call({:create, initial_floor, name}, _from, _names) do
+  def handle_call({:create, initial_floor, name}, _from, names) do
     {:ok, elevator} = Elevator.Elevator.start_link(name, initial_floor)
-    {:reply, elevator, _names}
+    {:reply, elevator, names}
   end
 
   def handle_cast({:moove, elevator}, names) do
@@ -45,25 +45,37 @@ defmodule Elevator.ElevatorMoover do
   end
 
   # Don't moove if not needed
-  defp moove(%{state: Const.state_idle, display_name: name}, elevator) do
+  defp moove(%{state: Const.state_idle(), display_name: _name}, elevator) do
     Process.sleep(1000)
-    ColorPrinter.print("#{name} iddle, wait", name)
+    # ColorPrinter.print("#{name} iddle, wait", name)
     moove(Elevator.Elevator.get(elevator), elevator)
   end
+
   # moove from one up
-  defp moove(%{current_position: current_position,
-               state: Const.state_up,
-               destination: dest,
-               display_name: name }, elevator) do
+  defp moove(
+         %{
+           current_position: current_position,
+           state: Const.state_up(),
+           destination: dest,
+           display_name: name
+         },
+         elevator
+       ) do
     Process.sleep(1000)
     Elevator.Elevator.go_up(elevator)
-    arrived(current_position + 1 , dest, elevator, name)
+    arrived(current_position + 1, dest, elevator, name)
   end
+
   # moove from one down
-  defp moove(%{current_position: current_position,
-               state: Const.state_down,
-               destination: dest,
-               display_name: name }, elevator) do
+  defp moove(
+         %{
+           current_position: current_position,
+           state: Const.state_down(),
+           destination: dest,
+           display_name: name
+         },
+         elevator
+       ) do
     Process.sleep(1000)
     Elevator.Elevator.go_down(elevator)
     arrived(current_position - 1, dest, elevator, name)
@@ -78,6 +90,7 @@ defmodule Elevator.ElevatorMoover do
     else
       ColorPrinter.print("#{name} Passed by floor #{new_position}", name)
     end
+
     moove(Elevator.Elevator.get(elevator), elevator)
   end
 end
